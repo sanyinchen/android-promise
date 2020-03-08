@@ -28,7 +28,7 @@ public class MainActivity extends AppCompatActivity {
 
         textView.setText("hello init ");
         textView2.setText("hello text2");
-        uiJugglePromise = new JugglePromise();
+        uiJugglePromise = new JugglePromise(this);
 
         testMock();
         testMock();

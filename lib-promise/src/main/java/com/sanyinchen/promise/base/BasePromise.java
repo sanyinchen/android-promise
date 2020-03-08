@@ -72,7 +72,6 @@ public abstract class BasePromise<T> extends DefaultObserver<T> {
         // The handlers you see below will resolve their values and forward them
         // to this promise.
         final BasePromise<O> next = create();
-        System.out.println("next:" + next);
         // Create the Observer
         final Observer<T> observer = new DefaultObserver<T>() {
             @Override
@@ -251,21 +250,16 @@ public abstract class BasePromise<T> extends DefaultObserver<T> {
     }
 
     public <O> BasePromise<O> append(final BasePromise<O> next) {
-        System.out.println("append===>");
         ListIterator iterator = iterator();
         BasePromise head = this;
-        System.out.println("now head:" + head);
         while (iterator.hasNext()) {
             head = iterator.next();
-            System.out.println("now head2:" + head);
         }
-        System.out.println("real head:" + head);
         head.next = next;
         next.pre = head;
         head.obs.subscribe(new DefaultObserver() {
             @Override
             public void onCompleted() {
-                System.out.println("sub is finished");
                 next.emit();
             }
 
@@ -276,12 +270,9 @@ public abstract class BasePromise<T> extends DefaultObserver<T> {
         });
         ListIterator nextIterator = iterator();
         BasePromise nextEnd = next;
-        System.out.println("nextEnd:" + nextEnd);
         while (nextIterator.hasNext()) {
             nextEnd = nextIterator.next();
         }
-
-        System.out.println("nextEnd2:" + nextEnd);
         return nextEnd;
     }
 
