@@ -8,6 +8,8 @@ import android.util.Log;
 import android.widget.TextView;
 
 import com.sanyinchen.promise.function.PromiseAction;
+import com.sanyinchen.promise.function.PromiseAction1;
+import com.sanyinchen.promise.function.PromiseFunction1;
 
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
@@ -16,7 +18,6 @@ public class MainActivity extends AppCompatActivity {
 
     private TextView textView;
     private TextView textView2;
-    private JugglePromise uiJugglePromise;
     private int i = 0;
 
     @Override
@@ -29,37 +30,36 @@ public class MainActivity extends AppCompatActivity {
 
         textView.setText("hello init ");
         textView2.setText("hello text2");
-        uiJugglePromise = new JugglePromise(this);
 
         testMock();
-        testMock();
-        testMock();
-        testMock();
-        testMock2();
-        testMock();
-        testMock();
-        testMock();
-        testMock2();
+//        testMock();
+//        testMock();
+//        testMock();
+//        testMock2();
+//        testMock();
+//        testMock();
+//        testMock();
+//        testMock2();
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
                 testMock2();
             }
         }, 10000);
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                testMock2();
-                while (true) {
-                    try {
-                        //  Log.i("src_test", " promise size:" + uiJugglePromise.size());
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }).start();
+//        new Thread(new Runnable() {
+//            @Override
+//            public void run() {
+//                testMock2();
+//                while (true) {
+//                    try {
+//                        //  Log.i("src_test", " promise size:" + uiJugglePromise.size());
+//                        Thread.sleep(1000);
+//                    } catch (InterruptedException e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//            }
+//        }).start();
 
     }
 
@@ -68,7 +68,7 @@ public class MainActivity extends AppCompatActivity {
         super.onPause();
         Log.i("src_test", "onPause=========>");
         long time1 = System.currentTimeMillis();
-        uiJugglePromise.release();
+        JugglePromise.getInstance(this).release();
         Log.i("src_test", "cost:" + (System.currentTimeMillis() - time1));
     }
 
@@ -76,8 +76,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         Log.i("src_test", "onResume=========>");
-        testMock();
-        testMock2();
+//        testMock();
+//        testMock2();
 
     }
 
@@ -94,16 +94,21 @@ public class MainActivity extends AppCompatActivity {
                     e.printStackTrace();
                 }
             }
-        }).observerOn(AndroidSchedulers.mainThread()).then(new PromiseAction() {
+        }).then(new PromiseFunction1<Void, String>() {
+
             @Override
-            public void call() {
-
-                Log.i("src_test", " testMock 2 in :" + Thread.currentThread().getName());
-                textView.setText("mock finish :" + (i++));
-
+            public String call(Void aVoid) {
+                return "1234";
             }
+        }).observerOn(AndroidSchedulers.mainThread()).then(new PromiseAction1() {
+            @Override
+            public void call(Object o) {
+                Log.i("src_test", " testMock 2 in :" + Thread.currentThread().getName() + " " + i);
+                textView.setText(o + "mock finish :" + (i++));
+            }
+
         });
-        uiJugglePromise.append(promise);
+        JugglePromise.getInstance(this).append(promise);
     }
 
     private void testMock2() {
@@ -122,12 +127,12 @@ public class MainActivity extends AppCompatActivity {
         }).observerOn(AndroidSchedulers.mainThread()).then(new PromiseAction() {
             @Override
             public void call() {
-                Log.i("src_test", " testMock2 2 in :" + Thread.currentThread().getName());
+                Log.i("src_test", " testMock2 2 in :" + Thread.currentThread().getName() + " " + i);
                 textView2.setText("mock finish :" + (i++));
 
             }
         });
-        uiJugglePromise.append(promise);
+        JugglePromise.getInstance(this).append(promise);
     }
 
     @Override

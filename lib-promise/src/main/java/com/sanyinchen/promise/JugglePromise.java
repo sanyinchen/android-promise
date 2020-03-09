@@ -11,29 +11,27 @@ import java.util.WeakHashMap;
 
 public class JugglePromise {
     private Promise head;
-    private final ThreadLocal<Map<Object, Promise>> localPromise;
     private WeakReference<Object> mRef;
 
-    public JugglePromise(@NonNull Object ref) {
-        localPromise = new ThreadLocal<>();
+    private static final Map<Object, JugglePromise> promiseCache = new WeakHashMap<>();
+
+
+    public static JugglePromise getInstance(@NonNull Object ref) {
+        JugglePromise jugglePromise = promiseCache.get(ref);
+        if (jugglePromise == null) {
+            jugglePromise = new JugglePromise(ref);
+            promiseCache.put(ref, jugglePromise);
+        }
+        return jugglePromise;
+    }
+
+    private JugglePromise(@NonNull Object ref) {
         mRef = new WeakReference<>(ref);
+        init();
     }
 
     private void init() {
-        Object ref = mRef.get();
-        if (ref == null) {
-            return;
-        }
-        Map<Object, Promise> mapCache = localPromise.get();
-        if (mapCache == null) {
-            mapCache = new WeakHashMap<Object, Promise>();
-            localPromise.set(mapCache);
-        }
-        head = mapCache.get(ref);
-        if (mapCache.get(ref) == null) {
-            head = new Promise();
-            mapCache.put(ref, head);
-        }
+        head = new Promise();
         head.emit();
     }
 
@@ -64,10 +62,13 @@ public class JugglePromise {
     }
 
     public void release() {
-        localPromise.set(null);
+        if (head == null) {
+            return;
+        }
         head.unSubscribe();
         head = null;
     }
+
 
 
 }
