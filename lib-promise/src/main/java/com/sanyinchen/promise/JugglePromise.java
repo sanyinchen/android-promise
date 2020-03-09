@@ -2,16 +2,28 @@ package com.sanyinchen.promise;
 
 import androidx.annotation.NonNull;
 
-import com.sanyinchen.promise.base.Iterator;
+import com.sanyinchen.promise.base.BasePromise;
 
+import java.lang.ref.WeakReference;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.WeakHashMap;
 
 public class JugglePromise {
     private Promise head;
+    private final ThreadLocal<Map<Object, Promise>> localPromise;
+    private WeakReference<Object> mRef;
 
     public JugglePromise(@NonNull Object ref) {
-        ThreadLocal<Map<Object, Promise>> localPromise = new ThreadLocal<>();
+        localPromise = new ThreadLocal<>();
+        mRef = new WeakReference<>(ref);
+    }
+
+    private void init() {
+        Object ref = mRef.get();
+        if (ref == null) {
+            return;
+        }
         Map<Object, Promise> mapCache = localPromise.get();
         if (mapCache == null) {
             mapCache = new WeakHashMap<Object, Promise>();
@@ -23,7 +35,6 @@ public class JugglePromise {
             mapCache.put(ref, head);
         }
         head.emit();
-
     }
 
     public int size() {
@@ -34,8 +45,11 @@ public class JugglePromise {
     }
 
     public void append(Promise newPromise) {
-        if (head == null) {
+        if (!isLiving()) {
             return;
+        }
+        if (head == null) {
+            init();
         }
         Iterator<Promise> iterator = head.iterator();
         while (head.isCompleted() && iterator.hasNext()) {
@@ -43,6 +57,16 @@ public class JugglePromise {
         }
         head.append(newPromise);
 
+    }
+
+    private boolean isLiving() {
+        return mRef.get() != null;
+    }
+
+    public void release() {
+        localPromise.set(null);
+        head.unSubscribe();
+        head = null;
     }
 
 

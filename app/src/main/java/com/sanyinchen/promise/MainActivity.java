@@ -22,6 +22,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.d("src_test", "onCreate===========>");
         setContentView(R.layout.activity_main);
         textView = findViewById(R.id.text);
         textView2 = findViewById(R.id.text2);
@@ -51,7 +52,7 @@ public class MainActivity extends AppCompatActivity {
                 testMock2();
                 while (true) {
                     try {
-                        Log.i("src_test", " promise size:" + uiJugglePromise.size());
+                        //  Log.i("src_test", " promise size:" + uiJugglePromise.size());
                         Thread.sleep(1000);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
@@ -59,6 +60,24 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }).start();
+
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        Log.i("src_test", "onPause=========>");
+        long time1 = System.currentTimeMillis();
+        uiJugglePromise.release();
+        Log.i("src_test", "cost:" + (System.currentTimeMillis() - time1));
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.i("src_test", "onResume=========>");
+        testMock();
+        testMock2();
 
     }
 
@@ -109,5 +128,11 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         uiJugglePromise.append(promise);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.i("src_test", "onDestroy=========>");
     }
 }

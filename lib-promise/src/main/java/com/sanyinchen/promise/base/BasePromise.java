@@ -7,6 +7,7 @@ import rx.exceptions.OnErrorThrowable;
 import rx.functions.*;
 import rx.subjects.ReplaySubject;
 
+import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 
@@ -27,7 +28,7 @@ public abstract class BasePromise<T> extends DefaultObserver<T> {
     private ReplaySubject<T> innerSubject;
     private Observable<T> obs;
     private BasePromise next;
-    private BasePromise pre;
+    private volatile boolean isUnSubscribe = false;
 
     public BasePromise() {
         this.innerSubject = ReplaySubject.create();
@@ -88,7 +89,9 @@ public abstract class BasePromise<T> extends DefaultObserver<T> {
 
             private void evaluate() {
                 try {
-
+                    if (isUnSubscribe()) {
+                        return;
+                    }
                     if (BasePromise.this.state == STATE.REJECTED) {
                         evaluateRejected();
                         return;
@@ -131,7 +134,6 @@ public abstract class BasePromise<T> extends DefaultObserver<T> {
         };
 
         this.next = next;
-        next.pre = this;
         this.obs.subscribe(observer);
 
         return next;
@@ -171,6 +173,9 @@ public abstract class BasePromise<T> extends DefaultObserver<T> {
 
 
     public BasePromise<T> emit(T value) {
+        if (isUnSubscribe()) {
+            return this;
+        }
         this.innerSubject.onNext(value);
         this.innerSubject.onCompleted();
         return this;
@@ -186,23 +191,29 @@ public abstract class BasePromise<T> extends DefaultObserver<T> {
         return emit(null);
     }
 
-    public <O> void autoEmit() {
-        autoEmit(null);
+
+    private boolean isUnSubscribe() {
+        return isUnSubscribe;
     }
 
-    public <O> void autoEmit(O value) {
-        ListIterator iterator = iterator();
-        BasePromise head = this;
-        while (iterator.hasPre()) {
-            head = iterator.pre();
+    private void markUnSubscribeInner() {
+        isUnSubscribe = true;
+    }
+
+    public void unSubscribe() {
+        Iterator<BasePromise> iterator = iterator();
+        while (iterator.hasNext()) {
+            BasePromise temp = iterator.next();
+            if (temp != null) {
+                temp.markUnSubscribeInner();
+            }
         }
-        head.emit(value);
     }
 
-    private class ListIterator<O> implements Iterator<BasePromise<O>> {
-        private BasePromise<O> current;
+    public static class ListIterator<T extends BasePromise> implements Iterator<T> {
+        private T current;
 
-        public ListIterator(BasePromise<O> first) {
+        public ListIterator(T first) {
             current = first;
         }
 
@@ -210,28 +221,15 @@ public abstract class BasePromise<T> extends DefaultObserver<T> {
             return current != null;
         }
 
-        public boolean hasPre() {
-            return current != null;
-        }
-
-
-        public BasePromise<O> next() {
+        public T next() {
             if (!hasNext()) {
                 return null;
             }
-            BasePromise<O> item = current;
-            current = current.next();
+            T item = current;
+            current = (T) current.getNext();
             return item;
         }
 
-        public BasePromise<O> pre() {
-            if (!hasNext()) {
-                throw new NoSuchElementException();
-            }
-            BasePromise<O> item = current;
-            current = current.pre();
-            return item;
-        }
     }
 
     @Override
@@ -249,14 +247,13 @@ public abstract class BasePromise<T> extends DefaultObserver<T> {
         this.value = value;
     }
 
-    public <O> BasePromise<O> append(final BasePromise<O> next) {
-        ListIterator iterator = iterator();
+    public void append(final BasePromise next) {
+        Iterator<BasePromise> iterator = iterator();
         BasePromise head = this;
         while (iterator.hasNext()) {
             head = iterator.next();
         }
         head.next = next;
-        next.pre = head;
         head.obs.subscribe(new DefaultObserver() {
             @Override
             public void onCompleted() {
@@ -268,17 +265,11 @@ public abstract class BasePromise<T> extends DefaultObserver<T> {
                 next.emit();
             }
         });
-        ListIterator nextIterator = iterator();
-        BasePromise nextEnd = next;
-        while (nextIterator.hasNext()) {
-            nextEnd = nextIterator.next();
-        }
-        return nextEnd;
     }
 
 
-    public ListIterator<?> iterator() {
-        return new ListIterator<>(this);
+    public <O extends BasePromise> Iterator<O> iterator() {
+        return new ListIterator<O>((O) this);
     }
 
     public int size() {
@@ -291,11 +282,7 @@ public abstract class BasePromise<T> extends DefaultObserver<T> {
         return size;
     }
 
-    public <O> BasePromise<O> next() {
-        return this.next;
-    }
-
-    public <O> BasePromise<O> pre() {
-        return this.pre;
+    public <O> BasePromise<O> getNext() {
+        return next;
     }
 }

@@ -61,19 +61,6 @@ public class Promise<T> extends BasePromise<T> {
         return (Promise<O>) innerThen(onNext, onRejected);
     }
 
-    @Override
-    public <O> Promise<O> next() {
-        return (Promise<O>) super.next();
-    }
 
-    @Override
-    public <O> Promise<O> pre() {
-        return (Promise<O>) super.pre();
-    }
-
-    @Override
-    public <O> Promise<O> append(BasePromise<O> next) {
-        return (Promise<O>) super.append(next);
-    }
 }
 
