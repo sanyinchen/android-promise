@@ -1,4 +1,4 @@
-# android-promise dependeny on rxjava V1.0
+# android-promise dependeny on rxjava V1.
 
 ## 基础类
 #### Promise
