@@ -37,9 +37,7 @@
    3. PromiseFunction<O> 无参转换Func,结果类型为O
    4. PromiseFunction1<I, O> 将I类型参数转为O类型
 
-#### JugglePromise
-    Promise组装器，将加入的promise串行执行   
-
+#### JugglePromise:Promise组装器，将加入的promise串行执行   
  ```
     Promise promise = new Promise();
         promise.observerOn(Schedulers.newThread()).then(new PromiseAction() {
